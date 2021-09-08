@@ -2,13 +2,13 @@ package app
 
 import (
 	"net/http"
-	"page-analyser/cmd/config"
+	"home24-page-analyser/cmd/config"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
-	routerPkg "page-analyser/cmd/router"
-	"page-analyser/handler"
+	routerPkg "home24-page-analyser/cmd/router"
+	"home24-page-analyser/handler"
 )
 
 type App struct {

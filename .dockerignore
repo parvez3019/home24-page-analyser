@@ -1,0 +1,6 @@
+.dockerignore
+.git*
+*_test.go
+dockerfile
+README.md
+*.iml

@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 
-	"page-analyser/cmd/config"
-	"page-analyser/handler"
+	"home24-page-analyser/cmd/config"
+	"home24-page-analyser/handler"
 )
 
 // IRouter represents an interface to router

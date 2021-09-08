@@ -1,4 +1,4 @@
-module page-analyser
+module home24-page-analyser
 
 go 1.16
 
