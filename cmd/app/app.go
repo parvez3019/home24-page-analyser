@@ -1,8 +1,9 @@
 package app
 
 import (
-	"net/http"
 	"home24-page-analyser/cmd/config"
+	"home24-page-analyser/service"
+	"net/http"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ func NewApp(config *config.Config) *App {
 // Start takes router as argument and starts the app server
 func (s *App) Start(router routerPkg.IRouter) {
 	r := router.
-		RegisterRoutes(handler.NewPageAnalyserHandler()).
+		RegisterRoutes(resolveDependencies()).
 		Get()
 
 	log.Infof("Serving on: %s", s.Port)
@@ -40,7 +41,10 @@ func (s *App) Start(router routerPkg.IRouter) {
 	if err != nil {
 		log.Errorf("Error %s \n", err.Error())
 	}
+}
 
+func resolveDependencies() handler.PageAnalyserHandler {
+	return handler.NewPageAnalyserHandler(service.NewAnalyzerService())
 }
 
 const (
