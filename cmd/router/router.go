@@ -14,7 +14,7 @@ import (
 
 // IRouter represents an interface to router
 type IRouter interface {
-	RegisterRoutes(handler handler.Handler) *Router
+	RegisterRoutes(handler handler.PageAnalyserHandler) *Router
 	Get() *gin.Engine
 }
 
@@ -35,7 +35,7 @@ func NewRouter(config *config.Config) *Router {
 }
 
 // RegisterRoutes take server context and client as params and register application routes under routing groups
-func (r *Router) RegisterRoutes(handler handler.Handler) *Router {
+func (r *Router) RegisterRoutes(handler handler.PageAnalyserHandler) *Router {
 	r.POST("/analyse", handler.Analyse)
 	return r
 }

@@ -25,7 +25,7 @@ func NewApp(config *config.Config) *App {
 // Start takes router as argument and starts the app server
 func (s *App) Start(router routerPkg.IRouter) {
 	r := router.
-		RegisterRoutes(handler.NewHandler()).
+		RegisterRoutes(handler.NewPageAnalyserHandler()).
 		Get()
 
 	log.Infof("Serving on: %s", s.Port)

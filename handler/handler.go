@@ -2,12 +2,12 @@ package handler
 
 import "github.com/gin-gonic/gin"
 
-type Handler interface {
+type PageAnalyserHandler interface {
 	Analyse(c *gin.Context)
 }
 
-type handler struct{}
+type pageAnalyserHandler struct{}
 
-func NewHandler() Handler {
-	return &handler{}
+func NewPageAnalyserHandler() PageAnalyserHandler {
+	return &pageAnalyserHandler{}
 }
