@@ -2,7 +2,9 @@ package app
 
 import (
 	"home24-page-analyser/cmd/config"
+	httpWrapper "home24-page-analyser/http"
 	"home24-page-analyser/service"
+	"home24-page-analyser/service/html_parser"
 	"net/http"
 	"time"
 
@@ -23,8 +25,8 @@ func NewApp(config *config.Config) *App {
 	}
 }
 
-// Start takes router as argument and starts the app server
-func (s *App) Start(router routerPkg.IRouter) {
+// StartServer takes router as argument and starts the app server
+func (s *App) StartServer(router routerPkg.IRouter) {
 	r := router.
 		RegisterRoutes(resolveDependencies()).
 		Get()
@@ -44,7 +46,11 @@ func (s *App) Start(router routerPkg.IRouter) {
 }
 
 func resolveDependencies() handler.PageAnalyserHandler {
-	return handler.NewPageAnalyserHandler(service.NewAnalyzerService())
+	httpWrapperClient := httpWrapper.NewClientWrapper(
+		&http.Client{Timeout: DefaultTimeout},
+	)
+	analyserService := service.NewAnalyzerService(httpWrapperClient, html_parser.NewParser())
+	return handler.NewPageAnalyserHandler(analyserService)
 }
 
 const (

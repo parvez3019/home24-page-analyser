@@ -9,5 +9,5 @@ import (
 func main() {
 	config := configPkg.LoadConfig()
 	app.NewApp(config).
-		Start(router.NewRouter(config))
+		StartServer(router.NewRouter(config))
 }

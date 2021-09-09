@@ -5,7 +5,7 @@ import (
 )
 
 type Client interface {
-	Do(request *http.Request) (*http.Response, error)
+	Get(url string) (resp *http.Response, err error)
 }
 
 type client struct {
