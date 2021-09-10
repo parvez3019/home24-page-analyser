@@ -2,14 +2,14 @@ package html_parser
 
 import (
 	"golang.org/x/net/html"
-	"io"
-	"strings"
-
 	"home24-page-analyser/model"
+	"io"
+	"net/url"
+	"strings"
 )
 
 type Parser interface {
-	Parse(reader io.Reader) (model.PageAnalysisResponse, error)
+	Parse(reader io.Reader, domain string) (model.PageAnalysisResponse, error)
 }
 
 type parser struct {
@@ -21,7 +21,7 @@ func NewParser() Parser {
 	return &parser{}
 }
 
-func (parser *parser) Parse(reader io.Reader) (model.PageAnalysisResponse, error) {
+func (parser *parser) Parse(reader io.Reader, domain string) (model.PageAnalysisResponse, error) {
 	node, err := html.Parse(reader)
 	if err != nil {
 		return model.PageAnalysisResponse{}, err
@@ -31,7 +31,8 @@ func (parser *parser) Parse(reader io.Reader) (model.PageAnalysisResponse, error
 		parseTitle(node).
 		parseHTMLVersion(node).
 		parseHeadings(node).
-		parseLoginForm(node)
+		parseLoginForm(node).
+		parseLinks(node, domain)
 
 	return result.response, result.err
 }
@@ -101,8 +102,55 @@ func (parser *parser) parseLoginForm(doc *html.Node) *parser {
 	return parser
 }
 
-func containsLoginKeyWord(s string) bool {
-	return strings.Contains(s, "login")
+func (parser *parser) parseLinks(doc *html.Node, domain string) *parser {
+	tags := make([]AnchorTag, 0)
+	var parseNodeLink func(*html.Node)
+	parseNodeLink = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			value, validLink := getAttr(n.Attr, "href")
+			if !validLink {
+				return
+			}
+			if value[0] == '/' || !startsWithHttpsScheme(value) {
+				urlParsed, err := url.Parse(domain)
+				if err != nil {
+					return
+				}
+
+				host := urlParsed.Scheme + "://" + urlParsed.Hostname()
+				if _, err = url.Parse(host + value); err == nil {
+					tags = append(tags, AnchorTag{
+						Url:        value,
+						IsExternal: false,
+					})
+				}
+			} else if _, err := url.Parse(value); err == nil {
+				tags = append(tags, AnchorTag{
+					Url:        value,
+					IsExternal: true,
+				})
+				return
+			}
+
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			parseNodeLink(c)
+		}
+	}
+	parseNodeLink(doc)
+
+	for _, tag := range tags {
+		if tag.IsExternal {
+			parser.response.Links.ExternalLinks.Count++
+		} else {
+			parser.response.Links.InternalLinks.Count++
+		}
+	}
+	return parser
+}
+
+func startsWithHttpsScheme(value string) bool {
+	return strings.Contains(value, "https://") || strings.Contains(value, "http://")
 }
 
 func getAttr(attrs []html.Attribute, attrName string) (string, bool) {
@@ -127,3 +175,8 @@ var headerTagMap = map[string]bool{
 }
 
 const DefaultHTMLVersion = "5.0"
+
+type AnchorTag struct {
+	Url        string
+	IsExternal bool
+}

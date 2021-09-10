@@ -27,5 +27,5 @@ func (a *analyserService) Analyse(request model.PageAnalyseRequest) (model.PageA
 	if err != nil {
 		return model.PageAnalysisResponse{}, err
 	}
-	return a.parser.Parse(response.Body)
+	return a.parser.Parse(response.Body, request.PageURL)
 }

@@ -20,9 +20,10 @@ func Test_ShouldReturnExpectedParsedStatisticResponse(t *testing.T) {
 			"has_login_form":true,
 			"header_count":{"h1":1,"h2":2,"h3":3,"h4":4,"h5":5,"h6":6},
 			"html_version":"HTML 3",
-			"inaccessible_links":{"count":0,"urls":null},
-			"links":{"external":{"count":0,"urls":null},
-			"internal":{"count":0,"urls":null}},
+			"links":{
+			"external":{"count":4,"urls":null},
+			"internal":{"count":2,"urls":null},
+			"inaccessible":{"count":0,"urls":null}},
 			"title":"Parvez Hassan Test Page"}`).
 		Done()
 }
@@ -62,8 +63,11 @@ var testHTMLPageResponse = `
 	<h6>Heading</h6>
 	<h6>Heading</h6>
 	<h6>Heading</h6>
-	<a href="/internal"></a>
-	<a href="https://www.example.com/external"></a>
+	<a href="/internal1"></a>
+	<a href="/internal2"></a>
+	<a href="https://www.example.com/external1"></a>
+	<a href="https://www.example.com/external2"></a>
+	<a href="https://www.example.com/external3"></a>
 	<a href="https://www.example.com/inaccessible"></a>
 	<form class="modal-content animate" action="/action_page.php">
 	<div class="container">

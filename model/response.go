@@ -5,7 +5,6 @@ type PageAnalysisResponse struct {
 	Title             string            `json:"title"`
 	HeaderCount       map[string]int    `json:"header_count"`
 	Links             LinksResponse     `json:"links"`
-	InaccessibleLinks LinkCountResponse `json:"inaccessible_links"`
 	HasLoginForm      bool              `json:"has_login_form"`
 }
 
@@ -15,6 +14,7 @@ type LinkCountResponse struct {
 }
 
 type LinksResponse struct {
-	InternalLinks LinkCountResponse `json:"internal"`
-	ExternalLinks LinkCountResponse `json:"external"`
+	InternalLinks     LinkCountResponse `json:"internal"`
+	ExternalLinks     LinkCountResponse `json:"external"`
+	InaccessibleLinks LinkCountResponse `json:"inaccessible"`
 }
