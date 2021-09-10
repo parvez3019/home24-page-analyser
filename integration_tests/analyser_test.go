@@ -11,6 +11,8 @@ func Test_ShouldReturnExpectedParsedStatisticResponse(t *testing.T) {
 	defer httpmock.Deactivate()
 
 	SetupTestDomainDownstreamMocks()
+	SetupExternalLinkAccessibilityDownstreamMocks()
+
 	_ = client.
 		Post("/analyse").
 		BodyString(`{"page_url": "https://www.test.com"}`).
@@ -21,9 +23,9 @@ func Test_ShouldReturnExpectedParsedStatisticResponse(t *testing.T) {
 			"header_count":{"h1":1,"h2":2,"h3":3,"h4":4,"h5":5,"h6":6},
 			"html_version":"HTML 3",
 			"links":{
-			"external":{"count":4,"urls":null},
-			"internal":{"count":2,"urls":null},
-			"inaccessible":{"count":0,"urls":null}},
+			"external":{"count":4,"urls":["https://www.facebook.com","https://www.google.com","https://www.amazon.com","https://www.example.com/inaccessible"]},
+			"internal":{"count":2,"urls":["/internal1","/internal2"]},
+			"inaccessible":{"count":1,"urls":["https://www.example.com/inaccessible"]}},
 			"title":"Parvez Hassan Test Page"}`).
 		Done()
 }
@@ -31,6 +33,18 @@ func Test_ShouldReturnExpectedParsedStatisticResponse(t *testing.T) {
 func SetupTestDomainDownstreamMocks() {
 	httpmock.RegisterResponder("GET", "https://www.test.com", func(req *http.Request) (*http.Response, error) {
 		return httpmock.NewStringResponse(200, testHTMLPageResponse), nil
+	})
+}
+
+func SetupExternalLinkAccessibilityDownstreamMocks() {
+	httpmock.RegisterResponder("GET", "https://www.facebook.com", func(req *http.Request) (*http.Response, error) {
+		return httpmock.NewJsonResponse(200, nil)
+	})
+	httpmock.RegisterResponder("GET", "https://www.google.com", func(req *http.Request) (*http.Response, error) {
+		return httpmock.NewJsonResponse(200, nil)
+	})
+	httpmock.RegisterResponder("GET", "https://www.amazon.com", func(req *http.Request) (*http.Response, error) {
+		return httpmock.NewJsonResponse(200, nil)
 	})
 }
 
@@ -65,9 +79,9 @@ var testHTMLPageResponse = `
 	<h6>Heading</h6>
 	<a href="/internal1"></a>
 	<a href="/internal2"></a>
-	<a href="https://www.example.com/external1"></a>
-	<a href="https://www.example.com/external2"></a>
-	<a href="https://www.example.com/external3"></a>
+	<a href="https://www.facebook.com"></a>
+	<a href="https://www.google.com"></a>
+	<a href="https://www.amazon.com"></a>
 	<a href="https://www.example.com/inaccessible"></a>
 	<form class="modal-content animate" action="/action_page.php">
 	<div class="container">

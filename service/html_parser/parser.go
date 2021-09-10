@@ -18,7 +18,16 @@ type parser struct {
 }
 
 func NewParser() Parser {
-	return &parser{}
+	return &parser{
+		response: model.PageAnalysisResponse{
+			HeaderCount: make(map[string]int, 0),
+			Links: model.LinksResponse{
+				InternalLinks:     model.LinkCountResponse{URLs: make([]string, 0)},
+				ExternalLinks:     model.LinkCountResponse{URLs: make([]string, 0)},
+				InaccessibleLinks: model.LinkCountResponse{URLs: make([]string, 0)},
+			},
+		},
+	}
 }
 
 func (parser *parser) Parse(reader io.Reader, domain string) (model.PageAnalysisResponse, error) {
@@ -142,8 +151,10 @@ func (parser *parser) parseLinks(doc *html.Node, domain string) *parser {
 	for _, tag := range tags {
 		if tag.IsExternal {
 			parser.response.Links.ExternalLinks.Count++
+			parser.response.Links.ExternalLinks.URLs = append(parser.response.Links.ExternalLinks.URLs, tag.Url)
 		} else {
 			parser.response.Links.InternalLinks.Count++
+			parser.response.Links.InternalLinks.URLs = append(parser.response.Links.InternalLinks.URLs, tag.Url)
 		}
 	}
 	return parser

@@ -27,5 +27,23 @@ func (a *analyserService) Analyse(request model.PageAnalyseRequest) (model.PageA
 	if err != nil {
 		return model.PageAnalysisResponse{}, err
 	}
-	return a.parser.Parse(response.Body, request.PageURL)
+	pageAnalysisResponse, err := a.parser.Parse(response.Body, request.PageURL)
+	if err != nil {
+		return model.PageAnalysisResponse{}, err
+	}
+
+	a.verifyLinksAccessibility(&pageAnalysisResponse)
+	return pageAnalysisResponse, err
+}
+
+func (a *analyserService) verifyLinksAccessibility(pageParsedResponse *model.PageAnalysisResponse) {
+	inaccessibleLinks := make([]string, 0)
+	for _, url := range pageParsedResponse.Links.ExternalLinks.URLs {
+		response, err := a.client.Get(url)
+		if err != nil || response.StatusCode != 200 {
+			pageParsedResponse.Links.InaccessibleLinks.Count++
+			inaccessibleLinks = append(inaccessibleLinks, url)
+		}
+	}
+	pageParsedResponse.Links.InaccessibleLinks.URLs = inaccessibleLinks
 }
