@@ -27,6 +27,7 @@ func (parser *parser) Parse(reader io.Reader) (model.PageAnalysisResponse, error
 	}
 
 	result := parser.
+		parseTitle(node).
 		parseHTMLVersion(node).
 		parseHeadings(node)
 
@@ -55,6 +56,21 @@ func (parser *parser) parseHeadings(node *html.Node) *parser {
 	}
 	countHeaderNode(node)
 	parser.response.HeaderCount = headerLevelCount
+	return parser
+}
+
+func (parser *parser) parseTitle(node *html.Node) *parser {
+	var findTitle func(*html.Node)
+	findTitle = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "title" {
+			parser.response.Title = n.FirstChild.Data
+			return
+		}
+		for childNode := n.FirstChild; childNode != nil; childNode = childNode.NextSibling {
+			findTitle(childNode)
+		}
+	}
+	findTitle(node)
 	return parser
 }
 

@@ -23,7 +23,7 @@ func Test_ShouldReturnExpectedParsedStatisticResponse(t *testing.T) {
 			"inaccessible_links":{"count":0,"urls":null},
 			"links":{"external":{"count":0,"urls":null},
 			"internal":{"count":0,"urls":null}},
-			"title":""}`).
+			"title":"Parvez Hassan Test Page"}`).
 		Done()
 }
 
