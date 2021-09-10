@@ -3,6 +3,7 @@ package html_parser
 import (
 	"golang.org/x/net/html"
 	"io"
+	"strings"
 
 	"home24-page-analyser/model"
 )
@@ -29,7 +30,8 @@ func (parser *parser) Parse(reader io.Reader) (model.PageAnalysisResponse, error
 	result := parser.
 		parseTitle(node).
 		parseHTMLVersion(node).
-		parseHeadings(node)
+		parseHeadings(node).
+		parseLoginForm(node)
 
 	return result.response, result.err
 }
@@ -72,6 +74,47 @@ func (parser *parser) parseTitle(node *html.Node) *parser {
 	}
 	findTitle(node)
 	return parser
+}
+
+func (parser *parser) parseLoginForm(doc *html.Node) *parser {
+	var hasPasswordInputType, hasSubmitTypeInput bool
+	var findLoginForm func(*html.Node)
+	findLoginForm = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			attrType, ok := getAttr(n.Attr, "type")
+			if ok && attrType == "password" {
+				hasPasswordInputType = true
+			}
+			if ok && attrType == "submit" {
+				hasSubmitTypeInput = true
+			}
+			if hasSubmitTypeInput && hasPasswordInputType {
+				parser.response.HasLoginForm = true
+				return
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			findLoginForm(c)
+		}
+	}
+	findLoginForm(doc)
+	return parser
+}
+
+func containsLoginKeyWord(s string) bool {
+	return strings.Contains(s, "login")
+}
+
+func getAttr(attrs []html.Attribute, attrName string) (string, bool) {
+	var attrVal string
+	var found bool
+	for _, attr := range attrs {
+		if attr.Key == attrName {
+			attrVal = attr.Val
+			found = true
+		}
+	}
+	return attrVal, found
 }
 
 var headerTagMap = map[string]bool{

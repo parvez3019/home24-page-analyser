@@ -17,7 +17,7 @@ func Test_ShouldReturnExpectedParsedStatisticResponse(t *testing.T) {
 		Expect(t).
 		Status(200).
 		JSON(`{
-			"has_login_form":false,
+			"has_login_form":true,
 			"header_count":{"h1":1,"h2":2,"h3":3,"h4":4,"h5":5,"h6":6},
 			"html_version":"HTML 3",
 			"inaccessible_links":{"count":0,"urls":null},
@@ -65,6 +65,19 @@ var testHTMLPageResponse = `
 	<a href="/internal"></a>
 	<a href="https://www.example.com/external"></a>
 	<a href="https://www.example.com/inaccessible"></a>
+	<form class="modal-content animate" action="/action_page.php">
+	<div class="container">
+	  <label for="uname"><b>Username</b></label>
+	  <input type="text" placeholder="Enter Username" name="uname" required>
+	
+	  <label for="psw"><b>Password</b></label>
+	  <input type="password" placeholder="Enter Password" name="psw" required>
+	  <button type="submit">Login</button>
+	  <label>
+		<input type="checkbox" checked="checked" name="remember"> Remember me
+	  </label>
+	</div>
+	</form>
 </body>
 </html>
 `
