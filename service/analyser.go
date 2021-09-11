@@ -7,15 +7,18 @@ import (
 	"sync"
 )
 
+// AnalyserService represents an interface abstraction over analyserService
 type AnalyserService interface {
 	Analyse(request model.PageAnalyseRequest) (model.PageAnalysisResponse, error)
 }
 
+// analyserService represents the struct for the service
 type analyserService struct {
 	client http.Client
 	parser html_parser.Parser
 }
 
+// NewAnalyzerService creates and returns the object for analyser service
 func NewAnalyzerService(httpClient http.Client, parser html_parser.Parser) AnalyserService {
 	return &analyserService{
 		client: httpClient,
@@ -23,6 +26,7 @@ func NewAnalyzerService(httpClient http.Client, parser html_parser.Parser) Analy
 	}
 }
 
+// Analyse takes pageAnalyseRequest and parse the page to create page analysis response or returns error
 func (a *analyserService) Analyse(request model.PageAnalyseRequest) (model.PageAnalysisResponse, error) {
 	response, err := a.client.Get(request.PageURL)
 	if err != nil {
@@ -37,6 +41,7 @@ func (a *analyserService) Analyse(request model.PageAnalyseRequest) (model.PageA
 	return pageAnalysisResponse, err
 }
 
+// verifyLinksAccessibility makes concurrent external http call to external links to verify their accessibility
 func (a *analyserService) verifyLinksAccessibility(pageParsedResponse *model.PageAnalysisResponse) {
 	inaccessibleLinksChan := make(chan string, len(pageParsedResponse.Links.ExternalLinks.URLs))
 	var wg sync.WaitGroup
@@ -56,10 +61,13 @@ func (a *analyserService) verifyLinksAccessibility(pageParsedResponse *model.Pag
 	pageParsedResponse.Links.InaccessibleLinks.Count = len(inaccessibleLinks)
 }
 
-func (a *analyserService) fetchURL(url string, result chan string, wg *sync.WaitGroup) {
+// fetchURL fetches the url and if it is not accessible then put it under result chan
+// we assume a link is accessible it and only if is returning 200 as response
+// Improvement Scope - we can also consider 3xx as valid response statues but not implemented yet
+func (a *analyserService) fetchURL(url string, inaccessibleLinksChan chan string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	response, err := a.client.Get(url)
 	if err != nil || response.StatusCode != 200 {
-		result <- url
+		inaccessibleLinksChan <- url
 	}
 }
