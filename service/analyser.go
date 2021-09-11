@@ -4,6 +4,7 @@ import (
 	"home24-page-analyser/http"
 	"home24-page-analyser/model"
 	"home24-page-analyser/service/html_parser"
+	"sync"
 )
 
 type AnalyserService interface {
@@ -37,13 +38,28 @@ func (a *analyserService) Analyse(request model.PageAnalyseRequest) (model.PageA
 }
 
 func (a *analyserService) verifyLinksAccessibility(pageParsedResponse *model.PageAnalysisResponse) {
-	inaccessibleLinks := make([]string, 0)
+	inaccessibleLinksChan := make(chan string, len(pageParsedResponse.Links.ExternalLinks.URLs))
+	var wg sync.WaitGroup
 	for _, url := range pageParsedResponse.Links.ExternalLinks.URLs {
-		response, err := a.client.Get(url)
-		if err != nil || response.StatusCode != 200 {
-			pageParsedResponse.Links.InaccessibleLinks.Count++
-			inaccessibleLinks = append(inaccessibleLinks, url)
-		}
+		wg.Add(1)
+		go a.fetchURL(url, inaccessibleLinksChan, &wg)
 	}
+	wg.Wait()
+	close(inaccessibleLinksChan)
+
+	inaccessibleLinks := make([]string, 0)
+	for inaccessibleLink := range inaccessibleLinksChan {
+		inaccessibleLinks = append(inaccessibleLinks, inaccessibleLink)
+	}
+
 	pageParsedResponse.Links.InaccessibleLinks.URLs = inaccessibleLinks
+	pageParsedResponse.Links.InaccessibleLinks.Count = len(inaccessibleLinks)
+}
+
+func (a *analyserService) fetchURL(url string, result chan string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	response, err := a.client.Get(url)
+	if err != nil || response.StatusCode != 200 {
+		result <- url
+	}
 }
