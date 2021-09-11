@@ -12,23 +12,21 @@ type PageAnalyserHandler interface {
 	Analyse(c *gin.Context)
 }
 
-// pageAnalyserHandler represents the struct for page anaylser handelr
+// pageAnalyserHandler represents the struct for page analyser handler
 type pageAnalyserHandler struct {
 	analyserService service.AnalyserService
 }
 
 // NewPageAnalyserHandler creates and returns PageAnalyserHandler object
 func NewPageAnalyserHandler(analyserService service.AnalyserService) PageAnalyserHandler {
-	return &pageAnalyserHandler{
-		analyserService: analyserService,
-	}
+	return &pageAnalyserHandler{analyserService: analyserService}
 }
 
 // Analyse handler for analyse API
 func (h *pageAnalyserHandler) Analyse(c *gin.Context) {
 	var pageAnalyseRequest model.PageAnalyseRequest
 	if err := c.BindJSON(&pageAnalyseRequest); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusBadRequest, model.NewError(model.ErrorCodeInvalidRequest, err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -40,6 +38,14 @@ func (h *pageAnalyserHandler) Analyse(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, response)
 }
 
+// handlerError handler error and custom error response
 func handlerError(c *gin.Context, err error) {
-	c.IndentedJSON(http.StatusInternalServerError, err.Error())
+	if modelErr, ok := err.(*model.Err); ok && modelErr.StatusCode != 0 {
+		c.JSON(modelErr.StatusCode, err)
+		c.Abort()
+		return
+	}
+	c.JSON(http.StatusInternalServerError, err)
+	c.Abort()
 }
+

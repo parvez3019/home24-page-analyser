@@ -35,13 +35,22 @@ func NewRouter(config *config.Config) *Router {
 // RegisterRoutes register application routes
 func (r *Router) RegisterRoutes(handler handler.PageAnalyserHandler) *Router {
 	r.Use(recovery())
-	r.POST("/analyse", handler.Analyse)
+	r.POST("/analyse", WrapContext(handler.Analyse))
 	return r
 }
 
 // Get return gin engine instance
 func (r *Router) Get() *gin.Engine {
 	return r.Engine
+}
+
+// WrapContext wrap header in the context
+// We can also create a middleware for this but since we don't have multiple routes, I have done the simplest thing
+func WrapContext(handler func(ctx *gin.Context)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Content-Type", "application/json; charset=utf-8")
+		handler(c)
+	}
 }
 
 // recovery panic recovery and logging

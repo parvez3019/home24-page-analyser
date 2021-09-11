@@ -1,9 +1,11 @@
 package service
 
 import (
+	log "github.com/sirupsen/logrus"
 	"home24-page-analyser/http"
 	"home24-page-analyser/model"
 	"home24-page-analyser/service/html_parser"
+	httpPkg "net/http"
 	"sync"
 )
 
@@ -30,15 +32,19 @@ func NewAnalyzerService(httpClient http.Client, parser html_parser.Parser) Analy
 func (a *analyserService) Analyse(request model.PageAnalyseRequest) (model.PageAnalysisResponse, error) {
 	response, err := a.client.Get(request.PageURL)
 	if err != nil {
-		return model.PageAnalysisResponse{}, err
+		log.Errorf("Analyse failed while fetching the requested page, err : %s", err.Error())
+		customErr := model.NewError(model.ErrorCodeSomethingWentWrong, err.Error(), httpPkg.StatusInternalServerError)
+		return model.PageAnalysisResponse{}, customErr
 	}
 	pageAnalysisResponse, err := a.parser.Parse(response.Body, request.PageURL)
 	if err != nil {
-		return model.PageAnalysisResponse{}, err
+		log.Errorf("Analyse failed while parsing the requested page, err : %s", err.Error())
+		customErr := model.NewError(model.ErrorCodeSomethingWentWrong, err.Error(), httpPkg.StatusInternalServerError)
+		return model.PageAnalysisResponse{}, customErr
 	}
 
 	a.verifyLinksAccessibility(&pageAnalysisResponse)
-	return pageAnalysisResponse, err
+	return pageAnalysisResponse, nil
 }
 
 // verifyLinksAccessibility makes concurrent external http call to external links to verify their accessibility
