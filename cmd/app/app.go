@@ -45,6 +45,7 @@ func (s *App) StartServer(router routerPkg.IRouter) {
 	}
 }
 
+// resolveDependencies resolve dependencies via dependency injection
 func resolveDependencies() handler.PageAnalyserHandler {
 	httpWrapperClient := httpWrapper.NewClientWrapper(
 		&http.Client{Timeout: DefaultTimeout},

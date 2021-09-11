@@ -29,13 +29,12 @@ func NewRouter(config *config.Config) *Router {
 	log.Info("Setting up endpoints...")
 	router := gin.New()
 
-	router.Use(recovery())
-
 	return &Router{Config: config, Engine: router}
 }
 
-// RegisterRoutes take server context and client as params and register application routes under routing groups
+// RegisterRoutes register application routes
 func (r *Router) RegisterRoutes(handler handler.PageAnalyserHandler) *Router {
+	r.Use(recovery())
 	r.POST("/analyse", handler.Analyse)
 	return r
 }

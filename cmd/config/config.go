@@ -25,7 +25,10 @@ func getPortConfig(port string) string {
 	}
 	log.Info("The environment variable PORT is missing.")
 	log.Info("Defaulting to 8000")
-	return "8000"
+	return DefaultPort
 }
 
-const PortEnvironmentVariableKey = "PORT"
+const (
+	PortEnvironmentVariableKey = "PORT"
+	DefaultPort                = "8000"
+)
