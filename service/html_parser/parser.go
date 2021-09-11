@@ -111,36 +111,20 @@ func (parser *parser) parseLoginForm(doc *html.Node) *parser {
 	return parser
 }
 
+// parse unique internal and external links
 func (parser *parser) parseLinks(doc *html.Node, domain string) *parser {
-	tags := make([]AnchorTag, 0)
+	tags := make(map[string]bool, 0)
 	var parseNodeLink func(*html.Node)
 	parseNodeLink = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "a" {
-			value, validLink := getAttr(n.Attr, "href")
-			if !validLink {
-				return
-			}
-			if value[0] == '/' || !startsWithHttpsScheme(value) {
-				urlParsed, err := url.Parse(domain)
-				if err != nil {
-					return
-				}
-
-				host := urlParsed.Scheme + "://" + urlParsed.Hostname()
-				if _, err = url.Parse(host + value); err == nil {
-					tags = append(tags, AnchorTag{
-						Url:        value,
-						IsExternal: false,
-					})
-				}
+			value, found := getAttr(n.Attr, "href")
+			if !found || value[0] == '#' {
+				// do nothing
+			} else if value[0] == '/' || !startsWithHttpsScheme(value) {
+				tags = parseInternalLink(domain, value, tags)
 			} else if _, err := url.Parse(value); err == nil {
-				tags = append(tags, AnchorTag{
-					Url:        value,
-					IsExternal: true,
-				})
-				return
+				tags[value] = true
 			}
-
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			parseNodeLink(c)
@@ -148,16 +132,28 @@ func (parser *parser) parseLinks(doc *html.Node, domain string) *parser {
 	}
 	parseNodeLink(doc)
 
-	for _, tag := range tags {
-		if tag.IsExternal {
+	for URL, isExternal := range tags {
+		if isExternal {
 			parser.response.Links.ExternalLinks.Count++
-			parser.response.Links.ExternalLinks.URLs = append(parser.response.Links.ExternalLinks.URLs, tag.Url)
+			parser.response.Links.ExternalLinks.URLs = append(parser.response.Links.ExternalLinks.URLs, URL)
 		} else {
 			parser.response.Links.InternalLinks.Count++
-			parser.response.Links.InternalLinks.URLs = append(parser.response.Links.InternalLinks.URLs, tag.Url)
+			parser.response.Links.InternalLinks.URLs = append(parser.response.Links.InternalLinks.URLs, URL)
 		}
 	}
 	return parser
+}
+
+func parseInternalLink(domain string, value string, tags map[string]bool) map[string]bool {
+	urlParsed, err := url.Parse(domain)
+	if err != nil {
+		return tags
+	}
+	host := urlParsed.Scheme + "://" + urlParsed.Hostname()
+	if _, err := url.Parse(host + value); err == nil {
+		tags[value] = false
+	}
+	return tags
 }
 
 func startsWithHttpsScheme(value string) bool {
