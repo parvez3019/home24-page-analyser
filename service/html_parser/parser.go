@@ -8,15 +8,18 @@ import (
 	"strings"
 )
 
+// Parser abstraction over parser
 type Parser interface {
 	Parse(reader io.Reader, domain string) (model.PageAnalysisResponse, error)
 }
 
+// parser represents a struct for parser
 type parser struct {
 	response model.PageAnalysisResponse
 	err      error
 }
 
+// NewParser creates and return a new parser object
 func NewParser() Parser {
 	return &parser{
 		response: model.PageAnalysisResponse{
@@ -30,136 +33,117 @@ func NewParser() Parser {
 	}
 }
 
-func (parser *parser) Parse(reader io.Reader, domain string) (model.PageAnalysisResponse, error) {
+// Parse takes io.reader as input and domainURL, parse the reader data and return page analysis response or error
+func (p *parser) Parse(reader io.Reader, domain string) (model.PageAnalysisResponse, error) {
 	node, err := html.Parse(reader)
 	if err != nil {
 		return model.PageAnalysisResponse{}, err
 	}
 
-	result := parser.
-		parseTitle(node).
-		parseHTMLVersion(node).
-		parseHeadings(node).
-		parseLoginForm(node).
-		parseLinks(node, domain)
+	result := p.parseHTMLVersion(node)
+
+	var parseNode func(*html.Node)
+	parseNode = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			result = p.parseTitle(n).
+				parseHeadings(n).
+				parseLoginForm(n).
+				parseLinks(n, domain)
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			parseNode(c)
+		}
+	}
+	parseNode(node)
 
 	return result.response, result.err
 }
 
-func (parser *parser) parseHTMLVersion(node *html.Node) *parser {
+// parseHTMLVersion parse HTML version from the node
+func (p *parser) parseHTMLVersion(node *html.Node) *parser {
 	if len(node.FirstChild.Attr) != 0 {
-		parser.response.HTMLVersion = node.FirstChild.Attr[0].Val
-		return parser
+		p.response.HTMLVersion = node.FirstChild.Attr[0].Val
+		return p
 	}
-	parser.response.HTMLVersion = DefaultHTMLVersion
-	return parser
+	p.response.HTMLVersion = DefaultHTMLVersion
+	return p
 }
 
-func (parser *parser) parseHeadings(node *html.Node) *parser {
-	headerLevelCount := make(map[string]int, 0)
-	var countHeaderNode func(*html.Node)
-	countHeaderNode = func(n *html.Node) {
-		if n.Type == html.ElementNode && headerTagMap[n.Data] {
-			headerLevelCount[n.Data]++
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			countHeaderNode(c)
-		}
+// parseHeadings parse heading levels from the node
+func (p *parser) parseHeadings(node *html.Node) *parser {
+	if headerTagMap[node.Data] {
+		p.response.HeaderCount[node.Data]++
 	}
-	countHeaderNode(node)
-	parser.response.HeaderCount = headerLevelCount
-	return parser
+	return p
 }
 
-func (parser *parser) parseTitle(node *html.Node) *parser {
-	var findTitle func(*html.Node)
-	findTitle = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "title" {
-			parser.response.Title = n.FirstChild.Data
-			return
-		}
-		for childNode := n.FirstChild; childNode != nil; childNode = childNode.NextSibling {
-			findTitle(childNode)
-		}
+// parseTitle parse title from the node
+func (p *parser) parseTitle(node *html.Node) *parser {
+	if node.Data == TitleHTMLTagKey {
+		p.response.Title = node.FirstChild.Data
 	}
-	findTitle(node)
-	return parser
+	return p
 }
 
-func (parser *parser) parseLoginForm(doc *html.Node) *parser {
-	var hasPasswordInputType, hasSubmitTypeInput bool
-	var findLoginForm func(*html.Node)
-	findLoginForm = func(n *html.Node) {
-		if n.Type == html.ElementNode {
-			attrType, ok := getAttr(n.Attr, "type")
-			if ok && attrType == "password" {
-				hasPasswordInputType = true
-			}
-			if ok && attrType == "submit" {
-				hasSubmitTypeInput = true
-			}
-			if hasSubmitTypeInput && hasPasswordInputType {
-				parser.response.HasLoginForm = true
-				return
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			findLoginForm(c)
-		}
+// parseLoginForm parse login form existence from the node
+func (p *parser) parseLoginForm(node *html.Node) *parser {
+	attrType, ok := getAttr(node.Attr, TypeHTMLTagKey)
+	if ok && attrType == PasswordTypeHTMLTagKey {
+		p.response.HasPasswordInputType = true
 	}
-	findLoginForm(doc)
-	return parser
+	if ok && attrType == SubmitTypeHTMLTagKey {
+		p.response.HasSubmitTypeInput = true
+	}
+	if p.response.HasSubmitTypeInput && p.response.HasPasswordInputType {
+		p.response.HasLoginForm = true
+	}
+	return p
 }
 
-// parse unique internal and external links
-func (parser *parser) parseLinks(doc *html.Node, domain string) *parser {
-	tags := make(map[string]bool, 0)
-	var parseNodeLink func(*html.Node)
-	parseNodeLink = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			value, found := getAttr(n.Attr, "href")
-			if !found || value[0] == '#' {
-				// do nothing
-			} else if value[0] == '/' || !startsWithHttpsScheme(value) {
-				tags = parseInternalLink(domain, value, tags)
-			} else if _, err := url.Parse(value); err == nil {
-				tags[value] = true
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			parseNodeLink(c)
-		}
+// parseLinks parse unique internal and external links from the node
+func (p *parser) parseLinks(node *html.Node, domain string) *parser {
+	if node.Data != AnchorHTMLTagKey {
+		return p
 	}
-	parseNodeLink(doc)
-
-	for URL, isExternal := range tags {
-		if isExternal {
-			parser.response.Links.ExternalLinks.Count++
-			parser.response.Links.ExternalLinks.URLs = append(parser.response.Links.ExternalLinks.URLs, URL)
-		} else {
-			parser.response.Links.InternalLinks.Count++
-			parser.response.Links.InternalLinks.URLs = append(parser.response.Links.InternalLinks.URLs, URL)
-		}
+	value, found := getAttr(node.Attr, HRefKey)
+	if !found || value[0] == '#' {
+		// if not found or link start with # do nothing
+	} else if value[0] == '/' || !startsWithHttpsScheme(value) { // if link start with / and not with any http scheme
+		p.parseInternalLink(domain, value)
+	} else if _, err := url.Parse(value); err == nil {
+		p.response.Links.ExternalLinks.Count++
+		p.response.Links.ExternalLinks.URLs = append(p.response.Links.ExternalLinks.URLs, value)
 	}
-	return parser
+	return p
 }
 
-func parseInternalLink(domain string, value string, tags map[string]bool) map[string]bool {
+func (p *parser) parseInternalLink(domain string, value string) {
+	if err := isInternalLink(domain, value); err != nil {
+		return
+	}
+	p.response.Links.InternalLinks.Count++
+	p.response.Links.InternalLinks.URLs = append(p.response.Links.InternalLinks.URLs, value)
+}
+
+// isInternalLink verify and parse internal link
+func isInternalLink(domain string, value string) error {
 	urlParsed, err := url.Parse(domain)
 	if err != nil {
-		return tags
+		return err
 	}
-	host := urlParsed.Scheme + "://" + urlParsed.Hostname()
-	if _, err := url.Parse(host + value); err == nil {
-		tags[value] = false
+	host := urlParsed.Scheme + SchemeHostSeparator + urlParsed.Hostname()
+	if _, err := url.Parse(host + value); err != nil {
+		return err
 	}
-	return tags
+	return nil
 }
 
+// startsWithHttpsScheme return true if value starts with any http scheme
 func startsWithHttpsScheme(value string) bool {
-	return strings.Contains(value, "https://") || strings.Contains(value, "http://")
+	return strings.Contains(value, HTTPSSchemePrefix) || strings.Contains(value, HTTPSchemePrefix)
 }
 
+// getAttr return attribute value if exists
 func getAttr(attrs []html.Attribute, attrName string) (string, bool) {
 	var attrVal string
 	var found bool
@@ -171,6 +155,19 @@ func getAttr(attrs []html.Attribute, attrName string) (string, bool) {
 	}
 	return attrVal, found
 }
+
+const (
+	TitleHTMLTagKey        = "title"
+	AnchorHTMLTagKey       = "a"
+	TypeHTMLTagKey         = "type"
+	PasswordTypeHTMLTagKey = "password"
+	SubmitTypeHTMLTagKey   = "submit"
+	HRefKey                = "href"
+	SchemeHostSeparator    = "://"
+
+	HTTPSSchemePrefix = "https://"
+	HTTPSchemePrefix  = "http://"
+)
 
 var headerTagMap = map[string]bool{
 	"h1": true,

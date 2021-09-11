@@ -1,11 +1,13 @@
 package model
 
 type PageAnalysisResponse struct {
-	HTMLVersion       string            `json:"html_version"`
-	Title             string            `json:"title"`
-	HeaderCount       map[string]int    `json:"header_count"`
-	Links             LinksResponse     `json:"links"`
-	HasLoginForm      bool              `json:"has_login_form"`
+	HTMLVersion          string         `json:"html_version"`
+	Title                string         `json:"title"`
+	HeaderCount          map[string]int `json:"header_count"`
+	Links                LinksResponse  `json:"links"`
+	HasLoginForm         bool           `json:"has_login_form"`
+	HasPasswordInputType bool           `json:"-"`
+	HasSubmitTypeInput   bool           `json:"-"`
 }
 
 type LinkCountResponse struct {
