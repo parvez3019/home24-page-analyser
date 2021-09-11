@@ -45,7 +45,7 @@ func handlerError(c *gin.Context, err error) {
 		c.Abort()
 		return
 	}
-	c.JSON(http.StatusInternalServerError, err)
+	c.JSON(http.StatusInternalServerError, err.Error())
 	c.Abort()
 }
 

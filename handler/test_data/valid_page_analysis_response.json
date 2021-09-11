@@ -1,0 +1,20 @@
+{
+  "html_version": "Version 5",
+  "title": "Title",
+  "header_count": null,
+  "links": {
+    "internal": {
+      "count": 0,
+      "urls": null
+    },
+    "external": {
+      "count": 0,
+      "urls": null
+    },
+    "inaccessible": {
+      "count": 0,
+      "urls": null
+    }
+  },
+  "has_login_form": false
+}
