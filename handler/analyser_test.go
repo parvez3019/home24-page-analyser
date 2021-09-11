@@ -34,7 +34,7 @@ func Test_pageAnalyserHandler_Analyse(t *testing.T) {
 			}(),
 			context:            getMockContextWithValidRequestBody(),
 			expectedStatusCode: 200,
-			expectedResponse:   utils.LoadJSONFromPath("/home24-page-analyser/handler/test_data/valid_page_analysis_response.json"),
+			expectedResponse:   utils.LoadFileAsStringFromPath("/home24-page-analyser/handler/test_data/valid_page_analysis_response.json"),
 		},
 		{
 			name:               "should return 400 with error for an invalid page request",

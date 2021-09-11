@@ -27,8 +27,8 @@ func HackResponseWriter(c *gin.Context) *responseBodyWriter {
 	return w
 }
 
-func LoadJSONFromPath(filePath string, ) string {
-	path := getRelativePath(filePath)
+func LoadFileAsStringFromPath(filePath string, ) string {
+	path := GetRelativePath(filePath)
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("Unable to open file  %s, error : %s", filePath, err.Error())
@@ -44,7 +44,7 @@ func LoadJSONFromPath(filePath string, ) string {
 	return string(content)
 }
 
-func getRelativePath(filePath string) string {
+func GetRelativePath(filePath string) string {
 	_, b, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(b), "../..")
 	return root + filePath
