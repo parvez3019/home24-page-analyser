@@ -27,7 +27,8 @@ func HackResponseWriter(c *gin.Context) *responseBodyWriter {
 	return w
 }
 
-func LoadFileAsStringFromPath(filePath string, ) string {
+// LoadFileAsStringFromPath load file data from file path as string
+func LoadFileAsStringFromPath(filePath string) string {
 	path := GetRelativePath(filePath)
 	file, err := os.Open(path)
 	if err != nil {

@@ -1,0 +1,32 @@
+{
+  "has_login_form": true,
+  "header_count": {
+    "h1": 1,
+    "h2": 2,
+    "h3": 3,
+    "h4": 4,
+    "h5": 5,
+    "h6": 6
+  },
+  "html_version": "HTML 3",
+  "links": {
+    "external": {
+      "count": 4,
+      "urls": [
+        "https://www.facebook.com",
+        "https://www.google.com",
+        "https://www.amazon.com",
+        "https://www.example.com/inaccessible"
+      ]
+    },
+    "internal": {
+      "count": 0,
+      "urls": []
+    },
+    "inaccessible": {
+      "count": 0,
+      "urls": []
+    }
+  },
+  "title": "Parvez Hassan Test Page"
+}

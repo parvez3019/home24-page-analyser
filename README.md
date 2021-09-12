@@ -26,7 +26,7 @@ about the contents of the page:
 
 
 ### Notes for reviewer
-- Have written integration and UT but couldn't complete all test cases in UT due to time crunch.
+- Have written integration and UT for each and every file but couldn't complete all test cases in UT for parser file due to time crunch.
 - Currently, I have made the following assumption in my implementation as those requirements were not clear in the problem statement
   - Since the login form implementation could be different for different pages, currently I'm checking it based on the existence of password type field and submit type field.
   - Considering links as accessible only if they are returning 200 as response, we can also consider 3xx series as a valid response if req.
